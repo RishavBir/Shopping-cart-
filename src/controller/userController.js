@@ -3,7 +3,6 @@ const { uploadFile } = require('./awsController')
 const bcrypt = require('bcrypt')
 const validator = require('validator')
 const jwt = require('jsonwebtoken')
-let saltRounds = 10
 //------------------------------- validation functions ---------------------------------------------------------------------------------
 
 const isValid = function (value) {
@@ -18,6 +17,7 @@ const isValidPassword = function (password) {
     if (password.length > 7 && password.length < 16)
         return true
 }
+
 const isValidfiles = function (files) {
     if (files && files.length > 0)
         return true
