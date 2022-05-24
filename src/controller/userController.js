@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const aws = require('aws-sdk')
 
 
-//////////-------------file -----------------------------------///
+///------------------------------------------file -----------------------------------///
 
 aws.config.update({
     accessKeyId: "AKIAY3L35MCRVFM24Q7U",
@@ -50,9 +50,14 @@ const emailValidator = /^\w+([\.-]?\w+)@\w+([\.-]?\w+)(\.\w{2,3})+$/
 let createUser = async (req, res) => {
     
     try {          
+        let files= req.files
 
         if(!Object.keys(req.body).length > 0){
             return res.status(400).send({status: false, message: "body must be requried !!!!!!!!!!!!!!!!!!!"})
+        }
+
+        if(!Object.keys(files).length > 0){
+            return res.status(400).send({status: false, message: "image file must be requried !!!!!!!!!!!!!!!!!!!"})
         }
 
         if(!Object.keys(req.body.data).length > 0){
@@ -173,16 +178,17 @@ let createUser = async (req, res) => {
         const hash = bcrypt.hashSync(password, saltRounds);
         data.password = hash;
 
-        let files= req.files
         if(files && files.length>0){
             //upload to s3 and get the uploaded link
             // res.send the link back to frontend/postman
             let p = await uploadFile( files[0] )
             data.profileImage = p;
+        }else if(!files){
+            return res.status(400).send({ status: false, message: "image file not found" })
         }
 
         let allData = await userModel.create(data)
-        return res.status(201).send({ status: true, message: "User created successfully", message: allData })
+        return res.status(201).send({ status: true, message: "User created successfully", data: allData })
 
 
     } catch (err) {
