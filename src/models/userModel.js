@@ -35,14 +35,16 @@ const userSchema = new mongoose.Schema({
         maxLen: 15
     },
     address: {
-        street: { type: String, trim: true },
-        city: { type: String, trim: true },
-        pincode: { type: String, trim: true }
+        shipping:{
+            street: { type: String, required: true},
+            city: { type: String, required: true},
+            pincode: { type: String, required: true}
+        }
     },
     billing: {
-        street: { type: String, trim: true },
-        city: { type: String, trim: true },
-        pincode: { type: String, trim: true }
+        street: { type: String, required: true},
+        city: { type: String, required: true},
+        pincode: { type: String, required: true}
     },
 }, { timestamps: true })
 
