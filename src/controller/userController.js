@@ -56,7 +56,24 @@ let createUser = async (req, res) =>{
        }else if(!address.shipping.pincode){
            return res.status(400).send({status: false, message: "shipping pincode must be requried"})
 
-       }else if(!address.billing.street){
+       }else if (address != undefined) {
+        if (address.shipping.street != undefined) {
+          if (typeof address.shipping.street != 'string' || address.shipping.street.trim().length == 0) {
+            return res.status(400).send({ status: false, message: "shipping street can not be a empty string" })
+          }
+        }
+        if (address.shipping.city != undefined) {
+            if (typeof address.shipping.city != 'string' || address.shipping.city.trim().length == 0) {
+              return res.status(400).send({ status: false, message: "shipping city can not be a empty string" })
+            }
+          }
+
+          if (address.shipping.pincode != undefined) {
+            if (address.shipping.pincode.toString().trim().length == 0 || address.shipping.pincode.toString().trim().length != 6) {
+              return res.status(400).send({ status: false, message: "shipping Pincode can not be a empty string or must be 6 digit number " })
+            }
+          }
+        }else if(!address.billing.street){
            return res.status(400).send({status: false, message: "billing street must be requried"})
 
        }else if(!address.billing.city){
