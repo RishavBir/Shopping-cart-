@@ -10,7 +10,7 @@ const isValidRequestBody = function (requestBody) {
     return Object.keys(requestBody).length > 0;
 };
 
-const isValidObjectId = function(objectId) {
+const isValidObjectId = function (objectId) {
     return mongoose.Types.ObjectId.isValid(objectId)
 }
 
@@ -62,9 +62,9 @@ const fnameValidator = /[A-Z][a-z]*/
 
 const lnameValidator = /[A-Z]+([ '-][a-zA-Z]+)*/
 
-const pincodeValidator = /^([0-9]{6})+$/
+// const pincodeValidator = /^([0-9]{6})+$/
 
-const passwordValidator = /^[a-z0-9@#$%^&*+=_\-><,\`~\/?!:;|]{8,15}$/
+// const passwordValidator = /^[a-z0-9@#$%^&*+=_\-><,\`~\/?!:;|]{8,15}$/
 
 // const imageFile = /(\.jpg|\.jpeg|\.png|\.gif)$/i;
 
@@ -256,8 +256,8 @@ const userLogin = async function (req, res) {
         let token = jwt.sign({
             userLogin: checkEmail._id.toString(),
             Organizations: "function_group_18_uranium",
-            iat: Math.floor(Date.now() * 1000 + (60 * 60)),
-            exp: Math.floor(Date.now() * 1000 + (60 * 60)),
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + (60 * 60)
         }, "key@$%&*0101")
 
         res.setHeader("function_group_18_uranium", token)
@@ -274,26 +274,25 @@ const userLogin = async function (req, res) {
 
 let getDetails = async function (req, res) {
 
-    let user_id = req.params.userId;
+    try {
 
-    var isValid = mongoose.Types.ObjectId.isValid(user_id);
-    if (isValid == false) {
-        return res
-            .status(400)
-            .send({ status: false, message: "please provide valid userId" });
-    }
-    let userDetails = await userModel.findById(user_id);
-    if (userDetails == null) {
-        return res.status(404).send({ status: false, message: "User not found!" });
+        let user_id = req.params.userId;
+
+        var isValid = mongoose.Types.ObjectId.isValid(user_id);
+        if (isValid == false) {
+            return res.status(400).send({ status: false, message: "please provide valid userId" });
+        }
+        let userDetails = await userModel.findById(user_id);
+        if (userDetails == null) {
+            return res.status(404).send({ status: false, message: "User not found!" });
+        }
+
+        res.status(200).send({ status: "true", message: "User profile details", data: userDetails, });
+
+    } catch (err) {
+        res.status(500).send({ status: false, message: err.message })
     }
 
-    res
-        .status(200)
-        .send({
-            status: "true",
-            message: "User profile details",
-            data: userDetails,
-        });
 };
 ////////////////////////////////////////////////   [ update user ]   ///////////////////////////////////////////////////
 
@@ -302,18 +301,18 @@ const updateUser = async function (req, res) {
     try {
 
         let body = req.body.data
-        if(!body){
+        if (!body) {
             return res.status(400).send({ status: false, msg: "body value must be present if want to update" })
         }
         let bodyData = JSON.parse(body) // convert the multi-part data from string to an object
-        if(!bodyData){
+        if (!bodyData) {
             return res.status(400).send({ status: false, msg: "body value must be present if want to update" })
         }
         let { fname, lname, email, phone, password, address } = bodyData
         let userId = req.params.userId;
         let files = req.files
 
-        if(!isValidObjectId(userId)){
+        if (!isValidObjectId(userId)) {
             return res.status(404).send({ status: false, msg: "user Id not valid" })
         }
 
@@ -365,7 +364,7 @@ const updateUser = async function (req, res) {
             let p = await uploadFile(files[0])
             bodyData.profileImage = p;
         } else if (!files) {
-            return res.status(400).send({ status: false, message: "image file not found" })
+            return res.status(400).send({ status: false, message: "Please upload profile image" })
         }
 
         if (phone != undefined) {
@@ -394,14 +393,25 @@ const updateUser = async function (req, res) {
             if (password.length > 15) {
                 return res.status(400).send({ status: false, message: "Password cannot be more than 15 characters" })
             }
+
+            const saltRounds = 10;
+            const hash = bcrypt.hashSync(password, saltRounds);
+            bodyData.password = hash;
         }
 
         if (address != undefined) {
+
+            let tempAddress = JSON.parse(JSON.stringify(checkUser.address))
+
+            console.log(tempAddress)
+
             if (address.shipping != undefined) {
                 if (address.shipping.street != undefined) {
                     if (typeof address.shipping.street != 'string' || address.shipping.street.trim().length == 0) {
                         return res.status(400).send({ status: false, message: "street can not be a empty string" })
                     }
+
+                    tempAddress.shipping.street = address.shipping.street
 
                 }
 
@@ -409,24 +419,47 @@ const updateUser = async function (req, res) {
                     if (typeof address.shipping.city != 'string' || address.shipping.city.trim().length == 0) {
                         return res.status(400).send({ status: false, message: "city can not be a empty string" })
                     }
+
+                    tempAddress.shipping.city = address.shipping.city
                 }
 
                 if (address.shipping.pincode != undefined) {
                     if (address.shipping.pincode.toString().trim().length == 0 || address.shipping.pincode.toString().trim().length != 6) {
                         return res.status(400).send({ status: false, message: "shipping Pincode can not be a empty string or must be 6 digit number " })
                     }
+
+                    tempAddress.shipping.pincode = address.shipping.pincode
                 }
 
             } else {
-                if (address.billing != undefined) {
+                if (address.billing.street != undefined) {
+                    if (typeof address.billing.street != 'string' || address.billing.street.trim().length == 0) {
+                        return res.status(400).send({ status: false, message: "street can not be a empty string" })
+                    }
+
+                    tempAddress.billing.street = address.billing.street
 
                 }
-            }
-        }
 
-            const saltRounds = 10;
-            const hash = bcrypt.hashSync(password, saltRounds);
-            bodyData.password = hash;
+                if (address.billing.city != undefined) {
+                    if (typeof address.billing.city != 'string' || address.billing.city.trim().length == 0) {
+                        return res.status(400).send({ status: false, message: "city can not be a empty string" })
+                    }
+
+                    tempAddress.billing.city = address.billing.city
+                }
+
+                if (address.billing.pincode != undefined) {
+                    if (address.billing.pincode.toString().trim().length == 0 || address.billing.pincode.toString().trim().length != 6) {
+                        return res.status(400).send({ status: false, message: "shipping Pincode can not be a empty string or must be 6 digit number " })
+                    }
+
+                    tempAddress.billing.pincode = address.billing.pincode
+                }
+            }
+
+            bodyData.address = tempAddress;
+        }
 
         let updatedUser = await userModel.findOneAndUpdate({ _id: userId }, bodyData, { new: true })
 
