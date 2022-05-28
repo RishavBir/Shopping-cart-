@@ -14,6 +14,11 @@ const isValidObjectId = function(objectId) {
     return mongoose.Types.ObjectId.isValid(objectId)
 }
 
+const isValidSize = (sizes) => {
+  return ["S", "XS","M","X", "L","XXL", "XL"].includes(sizes);
+}
+
+
 
 ///--------------------AWS CONFIG --------------------///
 aws.config.update({
@@ -122,15 +127,11 @@ const updateProducts = async function (req, res){
     let files = req.files
 
     if (!Object.keys(req.body).length > 0) {
-        return res.status(400).send({ status: false, message: "body must be requried !!!!!!!!!!!!!!!!!!!" })
-    }
-
-    if (!Object.keys(files).length > 0) {
-        return res.status(400).send({ status: false, message: "image file must be requried !!!!!!!!!!!!!!!!!!!" })
+        return res.status(400).send({ status: false, message: "body must be requried if you want to update" })
     }
 
     if (!Object.keys(req.body.data).length > 0) {
-        return res.status(400).send({ status: false, message: "body must be requried !!!!!!!!!!!!!!!!!!!" })
+        return res.status(400).send({ status: false, message: "body must be requried if you want to update" })
     }
 
     let data = JSON.parse(req.body.data)
@@ -138,20 +139,20 @@ const updateProducts = async function (req, res){
     let { title, description, price, currencyId, currencyFormat, style, availableSizes, installments } = data
 
     if (!Object.keys(data).length > 0) {
-        return res.status(400).send({ status: false, message: "body must be requried" })
+        return res.status(400).send({ status: false, message: "body must be requried if you want to update" })
 
     }
     
     let productId = req.params.productId;
 
-    if(!productId){
-      return res.status(404).send({ status: false, msg: "please provide productId in query params" });
-    }    
+    if(!isValidObjectId(productId)){
+      return res.status(404).send({ status: false, msg: "Enter a valid productId" });
+    }  
 
     let checkProductId = await productModel.findById(productId);
 
     if (!checkProductId) {
-      return res.status(404).send({ status: false, msg: "No Product found with this ProductId" });
+      return res.status(404).send({ status: false, msg: "No product found check the ID and try again" });
     }   
     
     
@@ -172,6 +173,9 @@ const updateProducts = async function (req, res){
       if (typeof price != 'string' || price.trim().length == 0) {
         return res.status(400).send({ status: false, message: "price can not be a empty string" })
       }
+      if(!/^[1-9]\d{0,7}(?:\.\d{1,2})?$/.test(price)){
+        return res.status(400).send({ status: false, message: "price should be only number" })
+      }
     }
 
     if(currencyId != undefined){
@@ -184,6 +188,8 @@ const updateProducts = async function (req, res){
       if (typeof currencyFormat != 'string' || currencyFormat.trim().length == 0) {
         return res.status(400).send({ status: false, message: "currencyFormat can not be a empty string" })
       }
+      if(!(/₹/.test(  currencyFormat))) 
+      return res.status(400).send({ status: false, message: "Currency format/symbol of product should be in '₹' " });
     }
 
     if(style != undefined){
@@ -193,6 +199,7 @@ const updateProducts = async function (req, res){
     }
 
     if(availableSizes != undefined){
+
       if (typeof availableSizes != 'string' || availableSizes.trim().length == 0) {
         return res.status(400).send({ status: false, message: "availableSizes can not be a empty string" })
       }
@@ -206,6 +213,11 @@ const updateProducts = async function (req, res){
     }
 
 
+    if(files != undefined){
+      if (!Object.keys(files).length > 0) {
+        return res.status(400).send({ status: false, message: "image file must be requried !!!!!!!!!!!!!!!!!!!" })
+    }
+    }
 
     if (files && files.length > 0) {
         //upload to s3 and get the uploaded link
@@ -217,16 +229,16 @@ const updateProducts = async function (req, res){
     }
 
 
-    // let isDeleted = await productModel.findById({ _id: productId, isDeleted: false });
+    let isDeleted = await productModel.findOne({ _id: productId, isDeleted: true });
 
-    // if(isDeleted){
-    //   return res.status(404).send({status: true,msg: " user have been updated successfully ",});
+    if(isDeleted){
+      return res.status(404).send({status: true,message: "product is already deleted"});
 
-    // }
+    }
 
     let updatedUser = await productModel.findByIdAndUpdate({ _id: productId },data,{ new: true });
 
-    return res.status(200).send({status: true,msg: " user have been updated successfully ",data: updatedUser,});
+    return res.status(200).send({status: true,message: " user have been updated successfully ",data: updatedUser,});
 
 
 } catch (err) {

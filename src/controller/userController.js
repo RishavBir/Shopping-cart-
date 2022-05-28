@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken')
 
 ///// validator functions /////
 const isValidRequestBody = function (requestBody) {
-  return Object.keys(requestBody).length > 0;
+    return Object.keys(requestBody).length > 0;
 };
 
 
@@ -175,15 +175,14 @@ let createUser = async (req, res) => {
 
         }
 
+        let EmailIdINDB = await userModel.findOne({ email })
+        if (EmailIdINDB) {
+            return res.status(400).send({ status: false, message: "Email id. already registered" })
+        }
+
         let phoneNoInDB = await userModel.findOne({ phone })
         if (phoneNoInDB) {
             return res.status(400).send({ status: false, message: "phoneNo. number already registered" })
-        }
-
-        let EmailIdINDB = await userModel.findOne({ email })
-
-        if (EmailIdINDB) {
-            return res.status(400).send({ status: false, message: "Email id. already registered" })
         }
 
         if (password.length < 8) {
@@ -195,10 +194,6 @@ let createUser = async (req, res) => {
         const saltRounds = 10;
         const hash = bcrypt.hashSync(password, saltRounds);
         data.password = hash;
-
-        // if(!/(\.jpg|\.jpeg|\.png|\.gif)$/i.test(files)){
-        //     return res.status(400).send({status: false, message: "image must be a png||jpg||jpeg  formate"})
-        // }
 
         if (files && files.length > 0) {
             //upload to s3 and get the uploaded link
@@ -221,26 +216,46 @@ let createUser = async (req, res) => {
 
 //////////////////////////////////////////////////////   [ login ]   ////////////////////////////////////////////////////
 
-const userLogin = async function(req, res) {
-    try {
-        const requestBody = req.body;
-        if (!isValidRequestBody(requestBody)) {
-            res.status(400).send({ status: false, message: 'Invalid request parameters' })
-            return
-        }
-        if (requestBody.email && requestBody.password) {
-            const check = await userModel.findOne({ email: requestBody.email, password: requestBody.password });
-            if (!check) {
-                return res.status(400).send({ status:false, msg: "Invalid login" })
-            }
+const userLogin = async function (req, res) {
 
-            let payload = { _id: check._id }
-            let token = jwt.sign(payload, 'project5',{ expiresIn: '50s'})
-            res.header('x-token', token);
-            res.status(200).send({ status: true, data: "login successfull", token: { token } })
-        } else {
-            res.status(400).send({ status: false, msg: "email & password is Required" })
+    try {
+
+        let body = req.body
+        let { email, password } = body
+
+        if (!isValidRequestBody(body)) {
+            return res.status(400).send({ status: false, message: "body must be present !!" })
+        } else if (!email) {
+            return res.status(400).send({ status: false, message: "email must be present" })
+
+        } else if (!password) {
+            return res.status(400).send({ status: false, message: "password must be present" })
+
+        } else if (!emailValidator.test(email)) {
+            return res.status(400).send({ status: false, message: "email must be valid formate" })
         }
+
+        let checkEmail = await userModel.findOne({ email: email })
+        if (!checkEmail) {
+            return res.status(404).send({ status: false, message: "Please check email and try again" })
+        }
+
+        let checkPassword = await bcrypt.compare(password, checkEmail.password)
+
+        if (!checkPassword) {
+            return res.status(404).send({ status: false, message: "Please check password and try again" })
+        }
+
+        let token = jwt.sign({
+            userLogin: checkEmail._id.toString(),
+            Organizations: "function_group_18_uranium",
+            iat: Math.floor(Date.now() * 1000 + (60 * 60)),
+            exp: Math.floor(Date.now() * 1000 + (60 * 60)),
+        }, "key@$%&*0101")
+
+        res.setHeader("function_group_18_uranium", token)
+        return res.status(201).send({ status: true, message: "User login successfull", data: { userId: checkEmail._id, token } })
+
     } catch (error) {
         res.status(500).send({ status: false, error: error.message })
     }
@@ -277,128 +292,135 @@ let getDetails = async function (req, res) {
 
 const updateUser = async function (req, res) {
 
-  try {
+    try {
 
-      let body = req.body.data
-      let bodyData = JSON.parse(body) // convert the multi-part data from string to an object
-      let { fname, lname, email, phone, password, address } = bodyData
-      let userId = req.params.userId;
-      let files = req.files
+        let body = req.body.data
+        let bodyData = JSON.parse(body) // convert the multi-part data from string to an object
+        let { fname, lname, email, phone, password, address } = bodyData
+        let userId = req.params.userId;
+        let files = req.files
 
-      let checkUser = await userModel.findById(userId)
+        let checkUser = await userModel.findById(userId)
 
-      if (!checkUser) {
-          return res.status(404).send({ status: false, msg: "No user found with this userId" })
-      }
-
-      if (fname != undefined) {
-          if (Object.values(fname) == 0) {
-              return res.status(400).send({ status: false, msg: "Please Provide fname" })
-          }
-
-          if (!fnameValidator.test(fname.trim())) {
-              return res.status(400).send({ status: false, message: "fname must be in valid format" })
-          }
-      }
-
-
-      if (lname) {
-          if (Object.values(lname) == 0) {
-              return res.status(400).send({ status: false, msg: "Please Provide lname" })
-          }
-
-          if (!lnameValidator.test(lname.trim())) {
-              return res.status(400).send({ status: false, message: "lname must be in valid format" })
-          }
-      }
-
-      if (email) {
-          if (Object.values(email) == 0) {
-              return res.status(400).send({ status: false, msg: "Please Provide email" })
-          }
-
-          if (!emailValidator.test(email.trim())) {
-              return res.status(400).send({ status: false, message: "email id must be valid format" })
-          }
-
-          let find = await userModel.findOne({ email: email })
-          if (find) {
-              return res.status(400).send({ status: false, msg: "Already exist please enter another email" })
-          }
-      }
-
-      if (files && files.length > 0) {
-          //upload to s3 and get the uploaded link
-          // res.send the link back to frontend/postman
-          let p = await uploadFile(files[0])
-          data.profileImage = p;
-      } else if (!files) {
-          return res.status(400).send({ status: false, message: "image file not found" })
-      }
-
-      if (phone) {
-          if (Object.values(phone) == 0) {
-              return res.status(400).send({ status: false, msg: "Please Provide phone " })
-          }
-
-          if (!phoneValidator.test(phone.trim())) {
-              return res.status(400).send({ status: false, message: "phone number must be valid format" })
-          }
-
-          let find = await userModel.findOne({ phone: phone })
-          if (find) {
-              return res.status(400).send({ status: false, msg: "Already exist please enter another phone" })
-          }
-      }
-
-      if (password) {
-          if (Object.values(password) == 0) {
-              return res.status(400).send({ status: false, msg: "Please Provide password" })
-          }
-
-          if (!passwordValidator.test(password.trim())) {
-              return res.status(400).send({ status: false, message: "password must be in valid format" })
-          }
-      }
-
-      if(address != undefined){
-        if(address.shipping != undefined){
-          if(address.shipping.street != undefined){
-            if (typeof address.shipping.street != 'string' || address.shipping.street.trim().length == 0) {
-              return res.status(400).send({ status: false, message: "street can not be a empty string" })
-            }
-            
-          }
-
-          if(address.shipping.city != undefined){
-            if (typeof address.shipping.city != 'string' || address.shipping.city.trim().length == 0) {
-              return res.status(400).send({ status: false, message: "city can not be a empty string" })
-            }
-          }
-
-          if(address.shipping.pincode != undefined){
-            if (address.shipping.pincode.toString().trim().length == 0 || address.shipping.pincode.toString().trim().length != 6) {
-              return res.status(400).send({ status: false, message: "shipping Pincode can not be a empty string or must be 6 digit number " })
-          }
-          }
-
-        }else{
-          if(address.billing != undefined){
-
-          }
+        if (!checkUser) {
+            return res.status(404).send({ status: false, msg: "No user found with this userId" })
         }
-      }
 
-      let updatedUser = await userModel.findOneAndUpdate({ _id: userId }, body , { new: true })
+        if (fname != undefined) {
+            if (Object.values(fname) == 0) {
+                return res.status(400).send({ status: false, msg: "Please Provide fname" })
+            }
 
-      return res.status(200).send({ status: true, msg: " user have been updated successfully ", data: updatedUser })
+            if (!fnameValidator.test(fname.trim())) {
+                return res.status(400).send({ status: false, message: "fname must be in valid format" })
+            }
+        }
 
-  }
 
-  catch (err) {
+        if (lname != undefined) {
+            if (Object.values(lname) == 0) {
+                return res.status(400).send({ status: false, msg: "Please Provide lname" })
+            }
 
-      res.status(500).send({ status: false, error: err.message })
-  }
+            if (!lnameValidator.test(lname.trim())) {
+                return res.status(400).send({ status: false, message: "lname must be in valid format" })
+            }
+        }
+
+        if (email != undefined) {
+            if (Object.values(email) == 0) {
+                return res.status(400).send({ status: false, msg: "Please Provide email" })
+            }
+
+            if (!emailValidator.test(email.trim())) {
+                return res.status(400).send({ status: false, message: "email id must be valid format" })
+            }
+
+            let find = await userModel.findOne({ email: email })
+            if (find) {
+                return res.status(400).send({ status: false, msg: "Already exist please enter another email" })
+            }
+        }
+
+        if (files && files.length > 0) {
+            //upload to s3 and get the uploaded link
+            // res.send the link back to frontend/postman
+            let p = await uploadFile(files[0])
+            bodyData.profileImage = p;
+        } else if (!files) {
+            return res.status(400).send({ status: false, message: "image file not found" })
+        }
+
+        if (phone != undefined) {
+            if (Object.values(phone) == 0) {
+                return res.status(400).send({ status: false, msg: "Please Provide phone " })
+            }
+
+            if (!phoneValidator.test(phone.trim())) {
+                return res.status(400).send({ status: false, message: "phone number must be valid format" })
+            }
+
+            let find = await userModel.findOne({ phone: phone })
+            if (find) {
+                return res.status(400).send({ status: false, msg: "Already exist please enter another phone" })
+            }
+        }
+
+        if (password != undefined) {
+            if (Object.values(password) == 0) {
+                return res.status(400).send({ status: false, msg: "Please Provide password" })
+            }
+
+            if (password.length < 8) {
+                return res.status(400).send({ status: false, message: "Your password must be at least 8 characters" })
+            }
+            if (password.length > 15) {
+                return res.status(400).send({ status: false, message: "Password cannot be more than 15 characters" })
+            }
+        }
+
+        if (address != undefined) {
+            if (address.shipping != undefined) {
+                if (address.shipping.street != undefined) {
+                    if (typeof address.shipping.street != 'string' || address.shipping.street.trim().length == 0) {
+                        return res.status(400).send({ status: false, message: "street can not be a empty string" })
+                    }
+
+                }
+
+                if (address.shipping.city != undefined) {
+                    if (typeof address.shipping.city != 'string' || address.shipping.city.trim().length == 0) {
+                        return res.status(400).send({ status: false, message: "city can not be a empty string" })
+                    }
+                }
+
+                if (address.shipping.pincode != undefined) {
+                    if (address.shipping.pincode.toString().trim().length == 0 || address.shipping.pincode.toString().trim().length != 6) {
+                        return res.status(400).send({ status: false, message: "shipping Pincode can not be a empty string or must be 6 digit number " })
+                    }
+                }
+
+            } else {
+                if (address.billing != undefined) {
+
+                }
+            }
+        }
+
+            const saltRounds = 10;
+            const hash = bcrypt.hashSync(password, saltRounds);
+            bodyData.password = hash;
+
+        let updatedUser = await userModel.findOneAndUpdate({ _id: userId }, bodyData, { new: true })
+
+        return res.status(200).send({ status: true, msg: " user have been updated successfully ", data: updatedUser })
+
+    }
+
+    catch (err) {
+
+        res.status(500).send({ status: false, error: err.message })
+    }
 
 }
 
