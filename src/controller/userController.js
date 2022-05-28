@@ -111,6 +111,9 @@ let createUser = async (req, res) => {
         } else if (!address) {
             return res.status(400).send({ status: false, message: "address must be requried" })
 
+        } else if (!address.shipping && !address.billing) {
+            return res.status(400).send({ status: false, message: "shipping and billing must be requried" })
+
         } else if (!address.shipping) {
             return res.status(400).send({ status: false, message: "shipping must be requried" })
 
