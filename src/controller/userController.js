@@ -10,6 +10,10 @@ const isValidRequestBody = function (requestBody) {
     return Object.keys(requestBody).length > 0;
 };
 
+const isValidObjectId = function(objectId) {
+    return mongoose.Types.ObjectId.isValid(objectId)
+}
+
 
 ///------------------------------------------file -----------------------------------///
 
@@ -295,10 +299,20 @@ const updateUser = async function (req, res) {
     try {
 
         let body = req.body.data
+        if(!body){
+            return res.status(400).send({ status: false, msg: "body value must be present if want to update" })
+        }
         let bodyData = JSON.parse(body) // convert the multi-part data from string to an object
+        if(!bodyData){
+            return res.status(400).send({ status: false, msg: "body value must be present if want to update" })
+        }
         let { fname, lname, email, phone, password, address } = bodyData
         let userId = req.params.userId;
         let files = req.files
+
+        if(!isValidObjectId(userId)){
+            return res.status(404).send({ status: false, msg: "user Id not valid" })
+        }
 
         let checkUser = await userModel.findById(userId)
 
