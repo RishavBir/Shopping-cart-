@@ -212,13 +212,6 @@ const updateProducts = async function (req, res){
       }
     }
 
-
-    if(files != undefined){
-      if (!Object.keys(files).length > 0) {
-        return res.status(400).send({ status: false, message: "image file must be requried !!!!!!!!!!!!!!!!!!!" })
-    }
-    }
-
     if (files && files.length > 0) {
         //upload to s3 and get the uploaded link
         // res.send the link back to frontend/postman
