@@ -122,28 +122,39 @@ const getProduct = async function (req, res) {
   }
 }
 
+//--------------------[        getProductById     ]------------------------------------
+
+const getProductById= async function (req, res) {
+
+  try {
+      let id = req.params.productId
+      if (!isValidObjectId(id)){
+          return res.status(404).send({status:false, message:"Plz enter valid product id"})
+      }
+      let isValidProductId = await productModel.findById({_id:id})
+      if(!isValidProductId){
+          return res.status(404).send({status:false, message:"Plz enter valid product id"})
+      }
+      let isDeleted = await productModel.findOne({ _id:id , isDeleted: true });
+
+     if(isDeleted){
+    return res.status(404).send({status: true,message: "product is already deleted"});
+
+  }
+      let allProducts = await productModel.findOne({ _id: id, isDeleted: false })
+      return res.status(200).send({status:true, message:"product found successfully" ,data:allProducts})
+  } 
+  catch (err) {
+      res.status(500).send({ status: false, msg: err.message })
+  }
+}
+
 
 const updateProducts = async function (req, res) {
+
   try {
+    
     let files = req.files
-
-    if (!Object.keys(req.body).length > 0) {
-      return res.status(400).send({ status: false, message: "body must be requried if you want to update" })
-    }
-
-    if (!Object.keys(req.body.data).length > 0) {
-      return res.status(400).send({ status: false, message: "body must be requried if you want to update" })
-    }
-
-    let data = JSON.parse(req.body.data)
-
-    let { title, description, price, currencyId, currencyFormat, style, isFreeShipping, availableSizes, installments } = data
-
-    if (!Object.keys(data).length > 0) {
-      return res.status(400).send({ status: false, message: "body must be requried if you want to update" })
-
-    }
-
     let productId = req.params.productId;
 
     if (!isValidObjectId(productId)) {
@@ -154,8 +165,24 @@ const updateProducts = async function (req, res) {
 
     if (!checkProductId) {
       return res.status(404).send({ status: false, msg: "No product found check the ID and try again" });
+    }      
+
+    if (!Object.keys(req.body).length > 0) {
+      return res.status(400).send({ status: false, message: "body must be requried if you want to req.body" })
     }
 
+    if (!Object.keys(req.body.data).length > 0) {
+      return res.status(400).send({ status: false, message: "body must be requried if you want to req.body.data update" })
+    }
+
+    let data = JSON.parse(req.body.data)
+
+    let { title, description, price, currencyId, currencyFormat, style, isFreeShipping, availableSizes, installments } = data
+
+    if (!Object.keys(data).length > 0) {
+      return res.status(400).send({ status: false, message: "body must be requried if you want to data update" })
+
+    }
 
     if (title != undefined) {
       if (typeof title != 'string' || title.trim().length == 0) {
@@ -240,17 +267,6 @@ const updateProducts = async function (req, res) {
       }
     }
 
-    if (files != undefined) {
-      if (files && files.length > 0) {
-        //upload to s3 and get the uploaded link
-        // res.send the link back to frontend/postman
-        let p = await uploadFile(files[0])
-        data.productImage = p;
-      } else if (!files) {
-        return res.status(400).send({ status: false, message: "image file not found" })
-      }
-    }
-
     let isDeleted = await productModel.findOne({ _id: productId, isDeleted: true });
 
     if (isDeleted) {
@@ -258,9 +274,19 @@ const updateProducts = async function (req, res) {
 
     }
 
-    let updatedUser = await productModel.findByIdAndUpdate({ _id: productId }, data, { new: true });
+    if (files && files.length > 0) {
+      //upload to s3 and get the uploaded link
+      // res.send the link back to frontend/postman
+      let p = await uploadFile(files[0])
+      data.productImage = p;
+    } else if (!files) {
+      return res.status(400).send({ status: false, message: "image file not found" })
+    }
 
-    return res.status(200).send({ status: true, message: "Product updated successfully", data: updatedUser, });
+
+    let updateProduct = await productModel.findByIdAndUpdate({ _id: productId }, data, { new: true });
+
+    return res.status(200).send({ status: true, message: "Product updated successfully", data: updateProduct, });
 
 
   } catch (err) {
@@ -297,4 +323,4 @@ const deleteProductsById= async function (req, res) {
 }
 
 
-module.exports = { createProduct, getProduct, updateProducts, deleteProductsById }
+module.exports = { createProduct, getProduct, getProductById, updateProducts, deleteProductsById }
