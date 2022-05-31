@@ -1,6 +1,6 @@
 const productModel = require('../models/productModel');
 const mongoose = require('mongoose');
-const aws = require("aws-sdk");
+const { uploadFile } = require('../utils/awsUpload');
 const moment = require('moment')
 
 
@@ -20,40 +20,6 @@ const isValidSize = (sizes) => {
 }
 
 
-
-///--------------------AWS CONFIG --------------------///
-aws.config.update({
-  accessKeyId: "AKIAY3L35MCRVFM24Q7U",
-  secretAccessKey: "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",
-  region: "ap-south-1",
-});
-
-let uploadFile = async (file) => {
-  return new Promise(function (resolve, reject) {
-    // this function will upload file to aws and return the link
-    let s3 = new aws.S3({ apiVersion: "2006-03-01" }); // we will be using the s3 service of aws
-
-    var uploadParams = {
-      ACL: "public-read",
-      Bucket: "classroom-training-bucket", //HERE
-      Key: "abc/" + file.originalname, //HERE
-      Body: file.buffer,
-    };
-
-    s3.upload(uploadParams, function (err, data) {
-      if (err) {
-        return reject({ error: err });
-      }
-      console.log("file uploaded succesfully");
-      return resolve(data.Location);
-    });
-
-    // let data= await s3.upload( uploadParams)
-    // if( data) return data.Location
-    // else return "there is an error"
-  });
-};
-///////
 
 //////////////////////////////////////////// [ create products ]  ////////////////////////////
 let createProduct = async (req, res) => {
@@ -96,26 +62,33 @@ let createProduct = async (req, res) => {
 
 const getProduct = async function (req, res) {
   try {
-    const queryDetails = req.query
+  
+    let data = req.query
+    // let {name , sizes, priceGreaterThan, priceLessThan} = data
+    let obj = {}
 
-    if (Object.keys(queryDetails).length == 0) {
-      let dbDetails = await productModel.find({ isDeleted: false })
-      return res.status(200).send({ status: true, message: 'Products list', data: dbDetails })
+    if (data.name != undefined) {
+      obj.title = data.name
     }
-    else {
-      let dbData = await productModel.find({ isDeleted: false })
-
-      let { size, name, priceGreaterThan, priceLessThan } = queryDetails
-
-      let pappu = dbData.filter(c => (c.price > priceLessThan && c.price < priceGreaterThan)).map(res => res.price);  /// not giving data properly
-      console.log(pappu)
-
-
-      let findDetails = { title: name, availableSizes: size, price: pappu }
-      let dbDetails = await productModel.findOne(findDetails)
-
-      return res.status(200).send({ status: true, message: "Products list", data: dbDetails })
+    if (data.size != undefined) {
+      obj.availableSizes = data.size
     }
+    if (data.priceGreaterThan != undefined) {
+      obj.price['$gte'] = data.priceGreaterThan;
+    }
+    if (data.priceLessThan != undefined) {
+      obj.price['$lte'] = data.priceLessThan
+    }
+
+    obj.isDeleted = false;
+
+    const productData = await productModel.find(obj).sort({price: 1}).select({deletedAt : 0})
+
+    if (productData.length == 0) {
+      return res.status(404).send({ status: false, message: "No product found" })
+    }
+
+    return res.status(200).send({ status: true, message: 'Success', data: productData })
   }
   catch (error) {
     res.status(500).send({ status: false, message: error.message });
@@ -301,11 +274,11 @@ const deleteProductsById= async function (req, res) {
   try {
       let id = req.params.productId
       if (!isValidObjectId(id)){
-          return res.status(404).send({status:false, message:"Plz enter valid product id"})
+          return res.status(400).send({status:false, message:"Plz enter valid product id"})
       }
       let isValidProductId = await productModel.findById({_id:id})
       if(!isValidProductId){
-          return res.status(404).send({status:false, message:"Plz enter valid product id"})
+          return res.status(400).send({status:false, message:"Plz enter valid product id"})
       }
       let isDeleted = await productModel.findOne({ _id:id , isDeleted: true });
 

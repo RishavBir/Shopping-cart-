@@ -14,6 +14,7 @@ const authentication = async(req,res,next) =>{
 
         let decodedToken = jwt.verify(token, "key@$%&*0101", {ignoreExpiration: true});
 
+        console.log(decodedToken)
         if (!decodedToken){
             return res.status(400).send({ status: false, massage: "token is invalid" })
         }       
