@@ -1,6 +1,7 @@
 const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const { uploadFile } = require('../utils/awsUpload');
+const validate = require('../utils/validation');
 const mongoose = require("mongoose");
 const jwt = require('jsonwebtoken')
 
@@ -10,14 +11,7 @@ const isValidRequestBody = function (requestBody) {
     return Object.keys(requestBody).length > 0;
 };
 
-const isValidObjectId = function (objectId) {
-    return mongoose.Types.ObjectId.isValid(objectId)
-}
 
-
-const phoneValidator = /^(?:(?:\+|0{0,2})91(\s*|[\-])?|[0]?)?([6789]\d{2}([ -]?)\d{3}([ -]?)\d{4})$/
-
-const emailValidator = /^\w+([\.-]?\w+)@\w+([\.-]?\w+)(\.\w{2,3})+$/
 
 const fnameValidator = /[A-Z][a-z]*/
 
@@ -239,12 +233,12 @@ let getDetails = async function (req, res) {
 
         let user_id = req.params.userId;
 
-        var isValid = mongoose.Types.ObjectId.isValid(user_id);
+        var isValid = validate.isValidObjectId(user_id);
         if (isValid == false) {
             return res.status(400).send({ status: false, message: "please provide valid userId" });
         }
         let userDetails = await userModel.findById(user_id);
-        if (userDetails == null) {
+        if (!userDetails) {
             return res.status(404).send({ status: false, message: "User not found!" });
         }
 
@@ -273,7 +267,7 @@ const updateUser = async function (req, res) {
         let userId = req.params.userId;
         let files = req.files
 
-        if (!isValidObjectId(userId)) {
+        if (!validate.isValidObjectId(userId)) {
             return res.status(404).send({ status: false, msg: "user Id not valid" })
         }
 
@@ -284,8 +278,8 @@ const updateUser = async function (req, res) {
         }
 
         if (fname != undefined) {
-            if (Object.values(fname) == 0) {
-                return res.status(400).send({ status: false, msg: "Please Provide fname" })
+            if (validate.isValidStringTrim(fname)) {
+                return res.status(400).send({ status: false, msg: "Please Provide fname & can't be a empty string" })
             }
 
             if (!fnameValidator.test(fname.trim())) {
@@ -295,8 +289,9 @@ const updateUser = async function (req, res) {
 
 
         if (lname != undefined) {
-            if (Object.values(lname) == 0) {
-                return res.status(400).send({ status: false, msg: "Please Provide lname" })
+
+            if (validate.isValidStringTrim(lname)) {
+                return res.status(400).send({ status: false, message: "Please Provide lname can't be a empty string" })
             }
 
             if (!lnameValidator.test(lname.trim())) {
@@ -305,17 +300,18 @@ const updateUser = async function (req, res) {
         }
 
         if (email != undefined) {
-            if (Object.values(email) == 0) {
-                return res.status(400).send({ status: false, msg: "Please Provide email" })
+            
+            if (validate.isValidStringTrim(email)) {
+                return res.status(400).send({ status: false, message: "Please Provide Email can't be a empty string" })
             }
 
-            if (!emailValidator.test(email.trim())) {
-                return res.status(400).send({ status: false, message: "email id must be valid format" })
+            if (!validate.isValidEmail(email)) {
+                return res.status(400).send({ status: false, message: "Email id must be valid format" })
             }
 
             let find = await userModel.findOne({ email: email })
             if (find) {
-                return res.status(400).send({ status: false, msg: "Already exist please enter another email" })
+                return res.status(400).send({ status: false, message: "Already exist please enter another email" })
             }
         }
 
@@ -329,23 +325,25 @@ const updateUser = async function (req, res) {
         }
 
         if (phone != undefined) {
-            if (Object.values(phone) == 0) {
-                return res.status(400).send({ status: false, msg: "Please Provide phone " })
+
+            if (validate.isValidStringTrim(phone)) {
+                return res.status(400).send({ status: false, message: "Please Provide phone number can not be a empty string" })
             }
 
-            if (!phoneValidator.test(phone.trim())) {
-                return res.status(400).send({ status: false, message: "phone number must be valid format" })
+            if (!validate.isValidPhone(phone)) {
+                return res.status(400).send({ status: false, message: "phone number must be valid format 10 digits" })
             }
 
             let find = await userModel.findOne({ phone: phone })
             if (find) {
-                return res.status(400).send({ status: false, msg: "Already exist please enter another phone" })
+                return res.status(400).send({ status: false, message: "Already exist please enter another phone" })
             }
         }
 
         if (password != undefined) {
-            if (Object.values(password) == 0) {
-                return res.status(400).send({ status: false, msg: "Please Provide password" })
+
+            if (validate.isValidStringTrim(password)) {
+                return res.status(400).send({ status: false, message: "Please Provide password & can not be a empty string" })
             }
 
             if (password.length < 8) {
@@ -361,15 +359,21 @@ const updateUser = async function (req, res) {
         }
 
         if (address != undefined) {
+            if (validate.isValid(address))
+            return res.status(400).send({ status: false, message: "Address should be in object and must contain shipping and billing addresses" });
+
 
             let tempAddress = JSON.parse(JSON.stringify(checkUser.address))
 
             console.log(tempAddress)
 
             if (address.shipping != undefined) {
+
+                if (validate.isValid(bodyData.address.shipping))
+                return res.status(400).send({ status: false, message: "Shipping address should be in object and must contain street, city and pincode" });
                 if (address.shipping.street != undefined) {
-                    if (typeof address.shipping.street != 'string' || address.shipping.street.trim().length == 0) {
-                        return res.status(400).send({ status: false, message: "street can not be a empty string" })
+                    if (validate.isValidStringTrim(address.shipping.street)) {
+                        return res.status(400).send({ status: false, message: "shipping street can not be a empty string" })
                     }
 
                     tempAddress.shipping.street = address.shipping.street
@@ -377,8 +381,8 @@ const updateUser = async function (req, res) {
                 }
 
                 if (address.shipping.city != undefined) {
-                    if (typeof address.shipping.city != 'string' || address.shipping.city.trim().length == 0) {
-                        return res.status(400).send({ status: false, message: "city can not be a empty string" })
+                    if (validate.isValidStringTrim(address.shipping.city)) {
+                        return res.status(400).send({ status: false, message: "shipping city can not be a empty string" })
                     }
 
                     tempAddress.shipping.city = address.shipping.city
@@ -392,10 +396,12 @@ const updateUser = async function (req, res) {
                     tempAddress.shipping.pincode = address.shipping.pincode
                 }
 
-            } else {
+                if (validate.isValid(bodyData.address.billing))
+                return res.status(400).send({ status: false, message: "billing address should be in object and must contain street, city and pincode" });
+
                 if (address.billing.street != undefined) {
-                    if (typeof address.billing.street != 'string' || address.billing.street.trim().length == 0) {
-                        return res.status(400).send({ status: false, message: "street can not be a empty string" })
+                    if (validate.isValidStringTrim(address.billing.street)) {
+                        return res.status(400).send({ status: false, message: "billing street can not be a empty string" })
                     }
 
                     tempAddress.billing.street = address.billing.street
@@ -403,8 +409,8 @@ const updateUser = async function (req, res) {
                 }
 
                 if (address.billing.city != undefined) {
-                    if (typeof address.billing.city != 'string' || address.billing.city.trim().length == 0) {
-                        return res.status(400).send({ status: false, message: "city can not be a empty string" })
+                    if (validate.isValidStringTrim(address.billing.city)) {
+                        return res.status(400).send({ status: false, message: "billing city can not be a empty string" })
                     }
 
                     tempAddress.billing.city = address.billing.city
@@ -412,7 +418,7 @@ const updateUser = async function (req, res) {
 
                 if (address.billing.pincode != undefined) {
                     if (address.billing.pincode.toString().trim().length == 0 || address.billing.pincode.toString().trim().length != 6) {
-                        return res.status(400).send({ status: false, message: "shipping Pincode can not be a empty string or must be 6 digit number " })
+                        return res.status(400).send({ status: false, message: "billing Pincode can not be a empty string or must be 6 digit number " })
                     }
 
                     tempAddress.billing.pincode = address.billing.pincode
