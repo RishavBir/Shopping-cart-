@@ -22,43 +22,123 @@ const isValidSize = (sizes) => {
 
 
 //////////////////////////////////////////// [ create products ]  ////////////////////////////
-let createProduct = async (req, res) => {
-  try {
-    let body = req.body.data
-    let files = req.files
+let createProduct = async (req,res) =>{
+  try{
+      let body = req.body.data
+      let files = req.files
 
+      if (files && files.length > 0) {
+          var image = await uploadFile(files[0]);
+        } else{
+          return res.status(400).send({ status: false, message: "image file not found" });
+        }
+      if(body){
+          
+          let bodyData = JSON.parse(body)
+              let {title, description, price, currencyId, currencyFormat, style, availableSizes, installments} = bodyData
 
+              ///////////////////////////// validations starts from here//////////////////
+              /// checking title
+              if(title){
+                if(typeof(title)!= "string" ){
+                  return res.status(400).send({status:false, message:"title should be a string."})
+                }else if(title == " "){
+                  return res.status(400).send({status:false,message:"Title can not be empty."})
+                }}
+                 else{   
+                return res.status(400).send({status:false,message:"Title is missing."})
+              }
+              /// checking description
+              if(description){
+                if(typeof(description)!= "string" ){
+                  return res.status(400).send({status:false, message:"Description should be a string."})
+                }
+                else if(description == " "){
+                  return res.status(400).send({status:false,message:"Description can not be empty."})
+                }
+              }else{
+                return res.status(400).send({status:false,message:"Product description is missing."})
+              }
+              
+              //// checking price
+              if(price){
+                if(typeof(price) != "number" ){
+                  return res.status(400).send({status:false, message:"Price should be a number."})}
+              }else{ 
+                return res.status(400).send({status:false,message:"Product price is missing."})}
 
-    if (files && files.length > 0) {
-      //upload to s3 and get the uploaded link
-      // res.send the link back to frontend/postman
-      var image = await uploadFile(files[0]);
+                /// checking currencyId
+              if(currencyId){
+                if( typeof(currencyId) != "string"){
+                  return res.status(400).send({status:false,message:"currencyId must ba a string."})
+                }else if( currencyId != "INR"){
+                  return res.status(400).send({status:false, message:"CurrencyId must be in INR."})}
+              }else{
+                return res.status(400).send({status:false,message:"currencyId is missing."})}
 
-    } else {
-      return res
-        .status(400)
-        .send({ status: false, message: "image file not found" });
-    }
-    if (body) {
+                /// checking currencyFormat
+              if(currencyFormat){
+                if(typeof(currencyFormat) != "string"){
+                  return res.status(400).send({status:false, message:"Currency format should be a string."})
+                }
+                else if(currencyFormat != "₹"){
+                  return res.status(400).send({status:false, message:"Currency format should be '₹'."})}
+              }else{
+                return res.status(400).send({status:false,message:"currencyFormat is missing."})}
+                
+                //checking style
+              if(style){
+                if(typeof(style) != "string"){
+                  return res.status(400).send({status:false, message:"style should be a string."})
+                }else if(style == " "){
+                  return res.status(400).send({status:false,message:"style can not be empty."})
+                }
+              }else{
+                return res.status(400).send({status:false,message:"style is missing."})
+              }
+             //// checking available sizes
+             if (availableSizes) {
+              if(typeof(availableSizes) != "string"){
+                return res.status(400).send({status:false, message:"available sizes must be a string."})
+              }else{
+                let availableSize = availableSizes.trim().replace(/[\]\[]+/g,'').toUpperCase().split(',') /// using regex to find and replace unwanted cahrs from sizes
+              for (let i = 0; i < availableSize.length; i++) {
+                  if (!(["S", "XS", "M", "X", "L", "XXL", "XL"]).includes(availableSize[i])) {
+                      return res.status(400).send({ status: false, message: `Sizes should be ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
+                  }}
+                  bodyData.availableSizes = availableSize
+              }}else{
+                return res.status(400).send({status:false, message:"availableSizes is missing"})
+              } 
 
-      let bodyData = JSON.parse(body)
-      let { title, descriptiion, price, currencyId, currencyFormat, style, availableSizes, installments } = bodyData
-      let dbData = await productModel.findOne(bodyData)
-      if (dbData) {
-        return res.status(409).send({ status: false, message: `Same product is already registered with id: ${dbData._id}` })
-      }
-      bodyData.productImage = image;
-      let created = await productModel.create(bodyData)
+            /// checking installments
+              if(installments){
+                if(typeof(installments) != "number"){
+                  return res.status(400).send({status:false,message:"Installments should be a number"})
+                }
+              }else{
+                return res.status(400).send({status:false,message:"installments key is missing."})
+              }
 
-      res.status(201).send({ status: true, message: "sucessfull", data: created })
-    } else {
-      return res.status(400).send({ status: false, message: "Product details is not present in request" })
-    }
+              ///////////////// validation ends here///////////////////////////
+
+              let dbData = await productModel.findOne({title:title})
+              if(dbData){
+                  return res.status(409).send({status:false, message:`Same product is already registered with id: ${dbData._id}`})
+              }
+              bodyData.productImage = image;
+              let created = await productModel.create(bodyData)
+
+              res.status(201).send({status:true,message:"sucessfull", data:created})
+          }else{
+              return res.status(400).send({status:false, message:"Product details is not present in the request"})
+          }
   }
-  catch (error) {
-    res.status(500).send({ status: false, message: error.message })
+  catch(error){
+      res.status(500).send({status:false, message: error.message})
   }
 }
+///////////////////////////////////[ get product   ] ///////////////////////////////////////////////
 
 const getProduct = async function (req, res) {
   try {
@@ -71,13 +151,13 @@ const getProduct = async function (req, res) {
       obj.title = data.name
     }
     if (data.size != undefined) {
-      obj.availableSizes = data.size
+      obj.availableSizes = data.size.toUpperCase()
     }
     if (data.priceGreaterThan != undefined) {
-      obj.price['$gte'] = data.priceGreaterThan;
+      obj.price = {$gt: data.priceGreaterThan};
     }
     if (data.priceLessThan != undefined) {
-      obj.price['$lte'] = data.priceLessThan
+      obj.price = {$lt: data.priceLessThan}
     }
 
     obj.isDeleted = false;

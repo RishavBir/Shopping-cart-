@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 
 //// IMPORTING CONTROLLERS  /////
-const {  getCart, deleteCart,createCart, updateCart }= require("../controller/cartController");
-const {createProduct, getProduct,getProductById, updateProducts, deleteProductsById} = require('../controller/productController')
 const { createUser, userLogin, getDetails, updateUser }= require("../controller/userController");
+const {createProduct, getProduct,getProductById, updateProducts, deleteProductsById} = require('../controller/productController')
+const {  getCart, deleteCart,createCart, updateCart }= require("../controller/cartController");
+const {updateOrder, createOrder }= require("../controller/orderController");
+
+
+
 const {authentication, authorization} = require('../middleWare/userAuth')
 
 
@@ -26,5 +30,9 @@ router.post('/users/:userId/cart', createCart)
 router.put('/users/:userId/cart', updateCart)
 router.get('/users/:userId/cart', getCart)
 router.delete('/users/:userId/cart', deleteCart)
+
+
+router.post('/users/:userId/orders', createOrder)
+router.put('/users/:userId/orders', updateOrder)
 
 module.exports = router;
