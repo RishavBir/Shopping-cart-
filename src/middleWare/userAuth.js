@@ -30,7 +30,7 @@ const authentication = async(req,res,next) =>{
         req.decodedToken = decodedToken;
 
         if(userId != req.decodedToken.userLogin){
-            return res.status(401).send({status:false,massage:'invalid user'})
+            return res.status(401).send({status:false,massage:'invalid user unauthorized access'})
         }
 
         next()

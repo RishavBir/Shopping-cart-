@@ -17,11 +17,6 @@ const fnameValidator = /[A-Z][a-z]*/
 
 const lnameValidator = /[A-Z]+([ '-][a-zA-Z]+)*/
 
-// const pincodeValidator = /^([0-9]{6})+$/
-
-// const passwordValidator = /^[a-z0-9@#$%^&*+=_\-><,\`~\/?!:;|]{8,15}$/
-
-// const imageFile = /(\.jpg|\.jpeg|\.png|\.gif)$/i;
 
 
 let createUser = async (req, res) => {
@@ -193,16 +188,16 @@ const userLogin = async function (req, res) {
         } else if (!password) {
             return res.status(400).send({ status: false, message: "password must be present" })
 
-        }else if (validate.isValidStringTrim(password)) {
+        } else if (validate.isValidStringTrim(password)) {
             return res.status(400).send({ status: false, message: "password cannot be empty" })
 
         } else if (validate.isValidStringTrim(email)) {
             return res.status(400).send({ status: false, message: "email cannot be empty" })
-            
+
         } else if (!validate.isValidEmail(email)) {
             return res.status(400).send({ status: false, message: "email must be valid formate" })
 
-        }  
+        }
 
         let checkEmail = await userModel.findOne({ email: email })
         if (!checkEmail) {
@@ -307,7 +302,7 @@ const updateUser = async function (req, res) {
         }
 
         if (email != undefined) {
-            
+
             if (validate.isValidStringTrim(email)) {
                 return res.status(400).send({ status: false, message: "Please Provide Email can't be a empty string" })
             }
@@ -367,7 +362,7 @@ const updateUser = async function (req, res) {
 
         if (address != undefined) {
             if (validate.isValid(address))
-            return res.status(400).send({ status: false, message: "Address should be in object and must contain shipping and billing addresses" });
+                return res.status(400).send({ status: false, message: "Address should be in object and must contain shipping and billing addresses" });
 
 
             let tempAddress = JSON.parse(JSON.stringify(checkUser.address))
@@ -377,7 +372,7 @@ const updateUser = async function (req, res) {
             if (address.shipping != undefined) {
 
                 if (validate.isValid(bodyData.address.shipping))
-                return res.status(400).send({ status: false, message: "Shipping address should be in object and must contain street, city and pincode" });
+                    return res.status(400).send({ status: false, message: "Shipping address should be in object and must contain street, city and pincode" });
                 if (address.shipping.street != undefined) {
                     if (validate.isValidStringTrim(address.shipping.street)) {
                         return res.status(400).send({ status: false, message: "shipping street can not be a empty string" })
@@ -404,7 +399,7 @@ const updateUser = async function (req, res) {
                 }
 
                 if (validate.isValid(bodyData.address.billing))
-                return res.status(400).send({ status: false, message: "billing address should be in object and must contain street, city and pincode" });
+                    return res.status(400).send({ status: false, message: "billing address should be in object and must contain street, city and pincode" });
 
                 if (address.billing.street != undefined) {
                     if (validate.isValidStringTrim(address.billing.street)) {
