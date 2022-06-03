@@ -19,6 +19,9 @@ const createCart = async function(req,res){
         if (!isValidObjectId(productId))
             return res.status(400).send({ status: false, message: "productId is invalid" })
 
+        if (!isValidObjectId(userId))
+            return res.status(400).send({ status: false, message: "userId  is invalid" })
+
         if (typeof cartId == "string") {
             if (!isValidObjectId(cartId))
                 return res.status(400).send({ status: false, message: "CART ID is Not Valid" })

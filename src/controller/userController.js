@@ -129,10 +129,10 @@ let createUser = async (req, res) => {
         }
 
 
-        if (!emailValidator.test(email)) {
+        if (!validate.isValidEmail(email)) {
             return res.status(400).send({ status: false, message: "email id must be valid formate" })
 
-        } if (!phoneValidator.test(phone)) {
+        } if (!validate.isValidPhone(phone)) {
             return res.status(400).send({ status: false, message: "phone no must be valid formate" })
 
         }
@@ -193,9 +193,16 @@ const userLogin = async function (req, res) {
         } else if (!password) {
             return res.status(400).send({ status: false, message: "password must be present" })
 
-        } else if (!emailValidator.test(email)) {
+        }else if (validate.isValidStringTrim(password)) {
+            return res.status(400).send({ status: false, message: "password cannot be empty" })
+
+        } else if (validate.isValidStringTrim(email)) {
+            return res.status(400).send({ status: false, message: "email cannot be empty" })
+            
+        } else if (!validate.isValidEmail(email)) {
             return res.status(400).send({ status: false, message: "email must be valid formate" })
-        }
+
+        }  
 
         let checkEmail = await userModel.findOne({ email: email })
         if (!checkEmail) {
@@ -216,7 +223,7 @@ const userLogin = async function (req, res) {
         }, "key@$%&*0101")
 
         res.setHeader("function_group_18_uranium", token)
-        return res.status(201).send({ status: true, message: "User login successfull", data: { userId: checkEmail._id, token } })
+        return res.status(200).send({ status: true, message: "User login successfull", data: { userId: checkEmail._id, token } })
 
     } catch (error) {
         res.status(500).send({ status: false, error: error.message })

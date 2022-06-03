@@ -1,4 +1,4 @@
-const orderModel = require('../models/orderModels')
+const orderModel = require('../models/orderModel')
 const mongoose = require('mongoose')
 const userModel = require('../models/userModel')
 const cartModel = require('../models/cartModel')
@@ -28,7 +28,7 @@ const createOrder = async function (req,res){
                return res.status(400).send({status:false, message:"cart id is empty"})
            }
        }else{
-        return res.status(400).send({status:false,message:"request body is empty"})
+        return res.status(400).send({status:false, message:"request body is empty"})
     }
     if(!mongoose.Types.ObjectId.isValid(bodyData.cartId)){
         return res.status(400).send({status:false, message:"cart Id is not valid"})
@@ -55,11 +55,15 @@ const createOrder = async function (req,res){
     // if(isValidStringTrim(bodyData)){
     //     return res.status(400).send({status:false, message:"cart id should not be empty."})
     // }
-    let status = await orderModel.findOne({userId:user_id}).select({status:1, _id:0})
+    let status = await orderModel.findOne({userId:user_id}).select({status:1})
    
 
-    if(status.status === "completed")
-    {let cartDetails = await cartModel.findById(bodyData.cartId)
+    console.log(status)
+
+    if(status.status === "completed"){
+        
+        
+    let cartDetails = await cartModel.findById(bodyData.cartId)
 
     let obj = {}
      obj.userId = user_id
@@ -132,6 +136,12 @@ const updateOrder = async function(req,res){
     }else{
         return res.status(400).send({status:false,message:"please provide orderId"})
     }
+
+   
+
+
+
+
 
     // res.status(200).send({status:true, message:"created"})
 }catch(error){

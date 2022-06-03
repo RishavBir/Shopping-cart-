@@ -7,29 +7,37 @@ const  productModel = require('../models/productModel');
 
 const authentication = async(req,res,next) =>{
     try {
-        let token = req.headers["x-api-key"];
-        if (!token) token = req.headers["x-Api-Key"];
+        let userId = req.params.userId
+        let bearerHeader = req.headers.authorization;
+        if(typeof bearerHeader == "undefined")
+         return res.status(400).send({ status: false, message: "Token is missing" });
 
-        if (!token) return res.status(400).send({ status: false, massage: "token must be present" });
+        let bearerToken = bearerHeader.split(' ')   
+        let token = bearerToken[1];
 
-        let decodedToken = jwt.verify(token, "key@$%&*0101", {ignoreExpiration: true});
+        jwt.verify(token, "key@$%&*0101",(err, decodedToken)=>{
+            if (err) {
+                return res.status(400).send({ status: false, massage: "token is invalid" })
+            }else{
 
-        console.log(decodedToken)
-        if (!decodedToken){
-            return res.status(400).send({ status: false, massage: "token is invalid" })
-        }       
-
+                
         let exp = decodedToken.exp
         let iatNow = Math.floor(Date.now() / 1000)
         if(exp<iatNow) {
             return res.status(401).send({status:false,massage:'session expired, please login again'})
-        }
+        }        
 
         req.decodedToken = decodedToken;
 
-        next()
+        if(userId != req.decodedToken.userLogin){
+            return res.status(401).send({status:false,massage:'invalid user'})
+        }
 
-    }catch (err) {
+        next()
+       }
+    });         
+
+     }catch (err) {
         console.log(err.massage)
         res.status(500).send({ status: false, massage: err.message })
     }
@@ -48,7 +56,7 @@ let authorization = async (req, res, next) => {
             return res.status(400).send({ status: false, message: 'user Id is must be present !!!!!!!' });
 
         } else if(mongoose.Types.ObjectId.isValid(userId) == false) {
-            return res.status(400).send({ status: false, message: "book id  is not valid !!!!!!" });
+            return res.status(400).send({ status: false, message: "user id  is not valid !!!!!!" });
 
         }
 
