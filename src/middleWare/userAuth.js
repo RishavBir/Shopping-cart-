@@ -1,13 +1,14 @@
 const jwt = require('jsonwebtoken');
 const { default: mongoose } = require("mongoose");
 const  userModel = require('../models/userModel');
+const validate = require('../utils/validation');
 const  productModel = require('../models/productModel');
 
 //----------------------------------------authentication----------------------------------------------------*/
 
 const authentication = async(req,res,next) =>{
     try {
-        let userId = req.params.userId
+        
         let bearerHeader = req.headers.authorization;
         if(typeof bearerHeader == "undefined")
          return res.status(400).send({ status: false, message: "Token is missing" });
@@ -29,10 +30,6 @@ const authentication = async(req,res,next) =>{
 
         req.decodedToken = decodedToken;
 
-        if(userId != req.decodedToken.userLogin){
-            return res.status(401).send({status:false,massage:'invalid user unauthorized access'})
-        }
-
         next()
        }
     });         
@@ -52,7 +49,7 @@ let authorization = async (req, res, next) => {
         let userId = req.params.userId
         const decodedToken = req.decodedToken
       
-          if(!userId){
+          if(userId == "undefined"){
             return res.status(400).send({ status: false, message: 'user Id is must be present !!!!!!!' });
 
         } else if(mongoose.Types.ObjectId.isValid(userId) == false) {
@@ -65,7 +62,7 @@ let authorization = async (req, res, next) => {
         if(!userById){
             return res.status(404).send({ status: false, message: 'user Id is not found  !!!!!!!' });
 
-        } else if (decodedToken.userId != userById.userId) {
+        } else if (decodedToken.userLogin != userId) {
             return res.status(403).send({ status: false, message: 'unauthorized access' });
 
         }

@@ -34,14 +34,14 @@ const createOrder = async (req, res) => {
         if(validate.isValid(data)) return res.status(400).send({ status: false, message: 'Data is required to cancel your order' });
   
         //validating the cartId
-        if(data?.cartId || typeof data.cartId == 'string'){
+        if(data.cartId || typeof data.cartId == 'string'){
           if(validate.isValid(data.cartId)) return res.status(400).send({ status: false, message: "Enter a valid cartId" });
           if(!validate.isValidObjectId(data.cartId)) return res.status(400).send({ status: false, message: "Enter a valid cartId" });
           if(findCart._id.toString() !== data.cartId) return res.status(400).send({ status: false, message: "CartId is invalid" })
         }
       }
       //checking cancellable value is present
-      if(data?.cancellable || typeof data.cancellable == 'string') {
+      if(data.cancellable || typeof data.cancellable == 'string') {
         if(!data.cancellable) return res.status(400).send({ status: false, message: "Enter a valid value for is cancellable" })
         if(validate.isValid(data.cancellable)) return res.status(400).send({ status: false, message: "Enter a valid value for is cancellable" })
         if(typeof data.cancellable == 'string'){
@@ -58,7 +58,7 @@ const createOrder = async (req, res) => {
       }
   
       //checking if status is present in request body
-      if(data?.status || typeof data.status == 'string') {
+      if(data.status || typeof data.status == 'string') {
         if(validate.isValid(data.status)) return res.status(400).send({ status: false, message: "Enter a valid value for is order status" });
   
         //validating if status is in valid format
