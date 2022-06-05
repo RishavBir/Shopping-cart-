@@ -12,7 +12,6 @@ const isValidRequestBody = function (requestBody) {
 };
 
 
-
 const fnameValidator = /[A-Z][a-z]*/
 
 const lnameValidator = /[A-Z]+([ '-][a-zA-Z]+)*/
@@ -433,14 +432,11 @@ const updateUser = async function (req, res) {
         let updatedUser = await userModel.findOneAndUpdate({ _id: userId }, bodyData, { new: true })
 
         return res.status(200).send({ status: true, msg: " user have been updated successfully ", data: updatedUser })
-
-    }
-
-    catch (err) {
+}
+ catch (err) {
 
         res.status(500).send({ status: false, error: err.message })
     }
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

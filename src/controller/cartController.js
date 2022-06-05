@@ -8,6 +8,7 @@ const validate = require('../utils/validation');
 const isValidObjectId = function(objectId) {
     return mongoose.Types.ObjectId.isValid(objectId)
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const createCart = async function(req,res){
     try {
@@ -25,6 +26,7 @@ const createCart = async function(req,res){
         if (typeof cartId == "string") {
             if (!isValidObjectId(cartId))
                 return res.status(400).send({ status: false, message: "CART ID is Not Valid" })
+
             //match userId for given cartId
             let getCart = await cartModel.findOne({ userId, _id: cartId })
             if (!getCart)
@@ -88,6 +90,7 @@ const createCart = async function(req,res){
     }
 }
 
+///////////////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
 const updateCart = async function (req, res) {
@@ -159,7 +162,7 @@ const updateCart = async function (req, res) {
     }
 }
 
-
+/////////////////////////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
 const getCart = async (req, res) =>{
@@ -194,6 +197,8 @@ const getCart = async (req, res) =>{
         catch (error) { res.status(500).send({ msg: error.message })
     }
 }
+
+///////////////////////////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 const deleteCart = async (req, res) =>{
   try {
@@ -231,5 +236,6 @@ const deleteCart = async (req, res) =>{
     res.status(500).send({ status: false, error: err.message })
   }
 }
+
 
 module.exports = { getCart, deleteCart,createCart, updateCart }

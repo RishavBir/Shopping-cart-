@@ -22,6 +22,7 @@ const isValidSize = (sizes) => {
 
 
 //////////////////////////////////////////// [ create products ]  ////////////////////////////
+
 let createProduct = async (req,res) =>{
   try{
       let body = req.body.data
@@ -39,6 +40,7 @@ let createProduct = async (req,res) =>{
 
               ///////////////////////////// validations starts from here//////////////////
               /// checking title
+
               if(title){
                 if(typeof(title)!= "string" ){
                   return res.status(400).send({status:false, message:"title should be a string."})
@@ -61,6 +63,7 @@ let createProduct = async (req,res) =>{
               }
               
               //// checking price
+
               if(price){
                 if(typeof(price) != "number" ){
                   return res.status(400).send({status:false, message:"Price should be a number."})}
@@ -68,6 +71,7 @@ let createProduct = async (req,res) =>{
                 return res.status(400).send({status:false,message:"Product price is missing."})}
 
                 /// checking currencyId
+
               if(currencyId){
                 if( typeof(currencyId) != "string"){
                   return res.status(400).send({status:false,message:"currencyId must ba a string."})
@@ -77,6 +81,7 @@ let createProduct = async (req,res) =>{
                 return res.status(400).send({status:false,message:"currencyId is missing."})}
 
                 /// checking currencyFormat
+
               if(currencyFormat){
                 if(typeof(currencyFormat) != "string"){
                   return res.status(400).send({status:false, message:"Currency format should be a string."})
@@ -87,6 +92,7 @@ let createProduct = async (req,res) =>{
                 return res.status(400).send({status:false,message:"currencyFormat is missing."})}
                 
                 //checking style
+
               if(style){
                 if(typeof(style) != "string"){
                   return res.status(400).send({status:false, message:"style should be a string."})
@@ -97,6 +103,7 @@ let createProduct = async (req,res) =>{
                 return res.status(400).send({status:false,message:"style is missing."})
               }
              //// checking available sizes
+
              if (availableSizes) {
               if(typeof(availableSizes) != "string"){
                 return res.status(400).send({status:false, message:"available sizes must be a string."})
@@ -112,6 +119,7 @@ let createProduct = async (req,res) =>{
               } 
 
             /// checking installments
+
               if(installments){
                 if(typeof(installments) != "number"){
                   return res.status(400).send({status:false,message:"Installments should be a number"})
@@ -201,6 +209,8 @@ const getProductById= async function (req, res) {
       res.status(500).send({ status: false, msg: err.message })
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 const updateProducts = async function (req, res) {
@@ -347,7 +357,7 @@ const updateProducts = async function (req, res) {
   }
 }
 
-//--------------------[        deleteProductsById     ]------------------------------------
+//--------------------[     deleteProductsById     ]------------------------------------
 
 const deleteProductsById= async function (req, res) {
 
